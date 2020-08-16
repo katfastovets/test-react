@@ -6,6 +6,7 @@ import { ViewerProvider } from "./context/ContextWrapper";
 function App() {
   return (
     <ViewerProvider>
+      <h1>Facts about cats</h1>
       <List />
     </ViewerProvider>
   );
