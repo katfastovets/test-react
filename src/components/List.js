@@ -1,7 +1,12 @@
 import React, {useContext, useEffect, useState} from 'react';
-import ListGroup from 'react-bootstrap/ListGroup';
-import Pagination from 'react-bootstrap/Pagination';
-import Form from 'react-bootstrap/Form';
+import {
+    ListGroup,
+    Pagination,
+    Form,
+    Row,
+    Col,
+    Button
+} from 'react-bootstrap';
 import { ViewerContext } from "../context/ContextWrapper";
 
 const LIST_STEP = 10;
@@ -16,9 +21,21 @@ const List = () => {
     const [currentEditInput, setCurrentEditInput] = useState(0);
     const [editedInputText, setEditedInputText] = useState('');
 
+    const [activeButtonNum, setActiveButtonNum] = useState(0);
+
     const {
         list
     } = state;
+
+    const updateList = (updatedList) => {
+        setState(prevState => {
+            return {
+                ...prevState,
+                list: updatedList
+            }
+        })
+        localStorage.setItem('list', JSON.stringify(updatedList));
+    }
 
     const editListItem = (e, index, initialValue) => {
         setListItemEditMode(true);
@@ -36,15 +53,13 @@ const List = () => {
         updatedList[activePageNumber + index].text = editedInputText;
         setListItemEditMode(false);
         setEditedInputText('');
-        setState(prevState => {
-            return {
-                ...prevState,
-                list: updatedList
-            }
-        })
+        updateList(updatedList);
+    }
 
-        localStorage.setItem('list', JSON.stringify(updatedList));
-
+    const deleteItem = (e, index) => {
+        const updatedList = list.slice();
+        updatedList.splice(index, 1);
+        updateList(updatedList);
     }
 
     useEffect(() => {
@@ -106,14 +121,13 @@ const List = () => {
 
     return (
         <>
-            <Pagination>
-                {pageNumbers}
-            </Pagination>
             <ListGroup>
                 {splitList[activePageNumber]?.map((quote, index) =>
                     <ListGroup.Item
-                      key={quote.text}
+                      key={index + quote.text}
                       onDoubleClick={(e) => editListItem(e, index, quote.text)}
+                      onClick={() => setActiveButtonNum(index)}
+                      active={activeButtonNum === index}
                     >
                         {listItemEditMode && currentEditInput === index ?
                             <Form onSubmit={(e) => saveEditedText(e, index)}>
@@ -124,11 +138,28 @@ const List = () => {
                                   onChange={(e) => onInputChangeHandler(e)}
                                 />
                             </Form>
-                        : quote.text}
+                        : <Row>
+                              <Col>
+                                  {quote.text}
+                              </Col>
+                              {activeButtonNum === index &&
+                                  <Col sm={2}>
+                                      <Button
+                                        variant="danger"
+                                        onClick={(e) => deleteItem(e, index)}
+                                      >
+                                          Delete
+                                      </Button>
+                                  </Col>
+                              }
+                          </Row>}
 
                     </ListGroup.Item>
                 )}
             </ListGroup>
+            <Pagination>
+                {pageNumbers}
+            </Pagination>
         </>
     );
 }
