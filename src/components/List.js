@@ -2,12 +2,11 @@ import React, {useContext, useEffect, useState} from 'react';
 import {
     ListGroup,
     Pagination,
-    Form,
-    Row,
-    Col,
-    Button
 } from 'react-bootstrap';
+
 import { ViewerContext } from "../context/ContextWrapper";
+import ListItem from "./ListItem";
+import {ReactSortable} from "react-sortablejs";
 
 const LIST_STEP = 10;
 
@@ -17,9 +16,9 @@ const List = () => {
     const [activePageNumber, setActivePageNumber] = useState(0);
     const [pageNumbers, setPageNumbers] = useState([]);
     const [splitList, setSplitList] = useState([]);
+    const [sortableList, setSortableList] = useState([]);
     const [listItemEditMode, setListItemEditMode] = useState(false);
     const [currentEditInput, setCurrentEditInput] = useState(0);
-    const [editedInputText, setEditedInputText] = useState('');
 
     const [activeButtonNum, setActiveButtonNum] = useState(0);
 
@@ -37,22 +36,16 @@ const List = () => {
         localStorage.setItem('list', JSON.stringify(updatedList));
     }
 
-    const editListItem = (e, index, initialValue) => {
+    const editListItem = (index) => {
         setListItemEditMode(true);
         setCurrentEditInput(index);
-        setEditedInputText(initialValue);
     }
 
-    const onInputChangeHandler = (e) => {
-        setEditedInputText(e.target.value);
-    }
-
-    const saveEditedText = (e, index) => {
+    const saveEditedText = (e, index, updatedText) => {
         e.preventDefault();
         const updatedList = list.slice();
-        updatedList[activePageNumber + index].text = editedInputText;
+        updatedList[activePageNumber + index] = updatedText;
         setListItemEditMode(false);
-        setEditedInputText('');
         updateList(updatedList);
     }
 
@@ -80,9 +73,9 @@ const List = () => {
                     console.log(err, 'error while downloading cat facts :(')
                 })
                 .then(res => {
-                    const list = res.map(quote => ({
-                        text: quote.text
-                    }))
+                    const list = res.map(quote => {
+                        return quote.text
+                    })
                     setState(prevState => {
                         return {
                             ...prevState,
@@ -98,13 +91,13 @@ const List = () => {
         if (list.length) {
             const newSplitList = list
                 .slice()
-                .map((item, i, arr) => arr.splice(0, 10))
+                .map((item, i, arr) => arr.splice(0, LIST_STEP))
                 .filter(item => item);
             setSplitList(newSplitList);
 
             const pageNums = list.length / LIST_STEP;
             let items = [];
-            for (let number = 0; number < pageNums; number++) {
+            for (let number = 0; number < Math.floor(pageNums); number++) {
                 items.push(
                     <Pagination.Item
                         key={number}
@@ -119,43 +112,55 @@ const List = () => {
         }
     }, [list, activePageNumber]);
 
+    useEffect(() => {
+        if (splitList.length) {
+            const newSortableList = splitList[activePageNumber]?.map((item, index) => {
+                return {
+                    id: index,
+                    name: item
+                }
+            })
+            setSortableList(newSortableList);
+        }
+    }, [splitList])
+
+
+    useEffect(() => {
+
+
+    }, [sortableList, list, activePageNumber]);
+
+    const updateSortedOrder = () => {
+        const newUpdatedList = JSON.parse(JSON.stringify(splitList));
+        newUpdatedList[activePageNumber] = sortableList.map(item => item.name);
+        updateList(newUpdatedList.flat());
+    }
+
     return (
         <>
             <ListGroup>
-                {splitList[activePageNumber]?.map((quote, index) =>
-                    <ListGroup.Item
-                      key={index + quote.text}
-                      onDoubleClick={(e) => editListItem(e, index, quote.text)}
-                      onClick={() => setActiveButtonNum(index)}
-                      active={activeButtonNum === index}
-                    >
-                        {listItemEditMode && currentEditInput === index ?
-                            <Form onSubmit={(e) => saveEditedText(e, index)}>
-                                <Form.Control
-                                  type="text"
-                                  placeholder="Enter new text"
-                                  value={editedInputText}
-                                  onChange={(e) => onInputChangeHandler(e)}
-                                />
-                            </Form>
-                        : <Row>
-                              <Col>
-                                  {quote.text}
-                              </Col>
-                              {activeButtonNum === index &&
-                                  <Col sm={2}>
-                                      <Button
-                                        variant="danger"
-                                        onClick={(e) => deleteItem(e, index)}
-                                      >
-                                          Delete
-                                      </Button>
-                                  </Col>
-                              }
-                          </Row>}
-
-                    </ListGroup.Item>
-                )}
+                {sortableList.length &&
+                <ReactSortable
+                  list={sortableList}
+                  setList={setSortableList}
+                  onEnd={() => updateSortedOrder()}
+                >
+                    {sortableList.map((quote, index) =>
+                      <ListItem
+                        key={quote.name}
+                        isEditMode={listItemEditMode && currentEditInput === index}
+                        text={quote.name}
+                        onDoubleClickHandler={() => editListItem(index, quote.name)}
+                        onClickHandler={() => setActiveButtonNum(index)}
+                        isActive={activeButtonNum === index}
+                        onSubmitHandler={saveEditedText}
+                        isDeleteButtonShown={activeButtonNum === index}
+                        onDeleteButtonClick={(e) => deleteItem(e, index)}
+                        index={index}
+                      />
+                    )}
+                </ReactSortable>
+                }
             </ListGroup>
             <Pagination>
                 {pageNumbers}
