@@ -20,7 +20,7 @@ const List = () => {
     const [listItemEditMode, setListItemEditMode] = useState(false);
     const [currentEditInput, setCurrentEditInput] = useState(0);
 
-    const [activeButtonNum, setActiveButtonNum] = useState(0);
+    const [activeButtonNum, setActiveButtonNum] = useState(6);
 
     const {
         list
