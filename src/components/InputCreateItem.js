@@ -17,8 +17,7 @@ const InputCreateItem = () => {
   const createNewItem = (e) => {
     e.preventDefault();
     const updatedList = list.slice();
-    updatedList.unshift({ text: value });
-    console.log(updatedList)
+    updatedList.unshift(value);
     setState(prevState => {
       return {
         ...prevState,
@@ -26,6 +25,7 @@ const InputCreateItem = () => {
       }
     })
     localStorage.setItem('list', JSON.stringify(updatedList));
+    setValue('');
   }
 
   return (
